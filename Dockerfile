@@ -1,11 +1,12 @@
 FROM java:7
-MAINTAINER mdouchement
+MAINTAINER dsrw
 
 ENV DEBIAN_FRONTEND noninteractive
 
 # Refresh package lists
 RUN apt-get update
 RUN apt-get -qy dist-upgrade
+RUN apt-get install netcat -y
 
 RUN apt-get install -qy rsync curl openssh-server openssh-client vim nfs-common
 
@@ -41,8 +42,9 @@ RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so
 #    ssh -L 50010:localhost:50010 root@192.168.99.100 -p 22022 -o PreferredAuthentications=password
 
 # Pseudo-Distributed Operation
-COPY etc/hadoop/core-site.xml etc/hadoop/core-site.xml
+COPY etc/hadoop/core-site.xml etc/hadoop/core-site.xml.template
 COPY etc/hadoop/hdfs-site.xml etc/hadoop/hdfs-site.xml
+COPY startup.sh /opt/hadoop/
 RUN hdfs namenode -format
 
 # SSH
@@ -58,8 +60,4 @@ EXPOSE 50075
 # HDFS secondary namenode
 EXPOSE 50090
 
-CMD service ssh start \
-  && start-dfs.sh \
-  && hadoop-daemon.sh start portmap \
-  && hadoop-daemon.sh start nfs3 \
-  && bash
+ENTRYPOINT ["/opt/hadoop/startup.sh"]
